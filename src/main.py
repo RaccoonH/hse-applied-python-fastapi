@@ -13,7 +13,7 @@ import uvicorn
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    app.state.redis_client = aioredis.from_url("redis://redis")
+    app.state.redis_client = aioredis.from_url("redis://localhost:6379")
     await create_db_and_tables()
     await create_link_db()
     yield
