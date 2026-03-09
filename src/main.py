@@ -8,12 +8,13 @@ from links.models import create_db_and_tables as create_link_db
 from redis import asyncio as aioredis
 
 from links.router import router as links_router
+from config import REDIS_ADDRESS
 import uvicorn
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    app.state.redis_client = aioredis.from_url("redis://localhost:6379")
+    app.state.redis_client = aioredis.from_url(REDIS_ADDRESS)
     await create_db_and_tables()
     await create_link_db()
     yield
