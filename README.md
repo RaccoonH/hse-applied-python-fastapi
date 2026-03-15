@@ -60,19 +60,29 @@ GET /links/search?original_url="https://github.com"
 ### Текущие результаты тестов
 1. Pytest:  
 ```
-Name                    Stmts   Miss  Cover
--------------------------------------------
-src/auth/db.py             14      2    86%
-src/auth/schemas.py         6      0   100%
-src/auth/users.py          26      3    88%
-src/links/cache.py         55      7    87%
-src/links/database.py      71      2    97%
-src/links/models.py        16      2    88%
-src/links/router.py       105     10    90%
-src/links/schemas.py       10      0   100%
-src/links/watcher.py       63      1    98%
--------------------------------------------
-TOTAL                     366     27    93%
+Name                      Stmts   Miss  Cover
+---------------------------------------------
+src/auth/db.py               14      2    86%
+src/auth/schemas.py           6      0   100%
+src/auth/users.py            26      3    88%
+src/config.py                 6      0   100%
+src/database.py              12      3    75%
+src/links/cache.py           55      7    87%
+src/links/database.py        71      2    97%
+src/links/models.py          16      2    88%
+src/links/router.py         105     10    90%
+src/links/schemas.py         10      0   100%
+src/links/watcher.py         63      1    98%
+src/main.py                  24      6    75%
+tests/__init__.py             0      0   100%
+tests/conftest.py            90      4    96%
+tests/test_auth_api.py       40      0   100%
+tests/test_db.py            158      0   100%
+tests/test_links_api.py     143      0   100%
+tests/test_utils.py          16      1    94%
+tests/test_watcher.py        62      0   100%
+---------------------------------------------
+TOTAL                       917     41    96%
 ```
 2. Locust:
 ```
