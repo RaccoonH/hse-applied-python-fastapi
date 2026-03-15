@@ -1,4 +1,4 @@
 #!/bin/bash
 
-coverage run --source=./src/auth,./src/links --concurrency=greenlet -m pytest
+coverage run --concurrency=greenlet -m pytest tests
 coverage html
