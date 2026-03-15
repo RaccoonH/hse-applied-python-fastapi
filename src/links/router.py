@@ -6,8 +6,8 @@ from .schemas import LinkCreate, LinkUpdate
 from fastapi.responses import RedirectResponse
 from auth.users import current_optional_user, current_active_user
 from auth.db import User
-from .database import db_create_link, db_get_link, db_delete_link, db_put_link, db_get_stats, db_search_code, SHORT_CODE_LEN
-from .cache import get_cached_link_url, get_not_found_cache, set_not_found_cache, set_link_cache, remove_link, update_link_cache, get_cached_link_stats
+from .database import db_create_link, db_get_link, db_delete_link, db_put_link, db_get_stats, db_search_code, SHORT_CODE_LEN, ERR_ALREADY_LINK
+from .cache import get_cached_link_url, get_not_found_cache, set_not_found_cache, set_link_cache, remove_link, update_link_cache, get_cached_link_stats, remove_not_found_cache
 from redis import asyncio as aioredis
 from datetime import datetime
 from .watcher import watch_event_iterate
@@ -48,7 +48,12 @@ async def create_link(info: LinkCreate, session: AsyncSession = Depends(get_asyn
 
     await watch_event_iterate(session, redis_client)
 
-    code = await db_create_link(info, session, user)
+    code, err = await db_create_link(info, session, user)
+    if err == ERR_ALREADY_LINK:
+        raise HTTPException(status_code=400, detail={
+            "error": f"There is already link with code: {code}",
+        })
+    await remove_not_found_cache(code, redis_client)
     return {
         "status": "success",
         "data": code
@@ -72,7 +77,7 @@ async def search_original_url(original_url: str, session: AsyncSession = Depends
 @router.get("/{short_code}")
 async def get_short_code(short_code: str, session: AsyncSession = Depends(get_async_session), redis_client: aioredis.Redis = Depends(get_redis_client)):
     if len(short_code) != SHORT_CODE_LEN:
-        raise HTTPException(status_code=500, detail={
+        raise HTTPException(status_code=400, detail={
             "error": "Incorrect short code, it must have 8 symbols",
         })
 
@@ -98,7 +103,7 @@ async def get_short_code(short_code: str, session: AsyncSession = Depends(get_as
 @router.delete("/{short_code}")
 async def delete_short_code(short_code: str, session: AsyncSession = Depends(get_async_session), user: User = Depends(current_active_user), redis_client: aioredis.Redis = Depends(get_redis_client)):
     if len(short_code) != SHORT_CODE_LEN:
-        raise HTTPException(status_code=500, detail={
+        raise HTTPException(status_code=400, detail={
             "error": "Incorrect short code, it must have 8 symbols",
         })
 
@@ -123,11 +128,11 @@ async def delete_short_code(short_code: str, session: AsyncSession = Depends(get
 async def put_short_code(info: LinkUpdate, short_code: str, session: AsyncSession = Depends(get_async_session), user: User = Depends(current_active_user),
                          redis_client: aioredis.Redis = Depends(get_redis_client)):
     if len(short_code) != SHORT_CODE_LEN:
-        raise HTTPException(status_code=500, detail={
+        raise HTTPException(status_code=400, detail={
             "error": "Incorrect short code, it must have 8 symbols",
         })
     if info.custom_alias is not None and len(info.custom_alias) != SHORT_CODE_LEN:
-        raise HTTPException(status_code=500, detail={
+        raise HTTPException(status_code=400, detail={
             "error": "Incorrect short code, it must have 8 symbols",
         })
 
@@ -137,7 +142,11 @@ async def put_short_code(info: LinkUpdate, short_code: str, session: AsyncSessio
     if not_found:
         raise HTTPException(status_code=404)
 
-    new_code = await db_put_link(short_code, info, session, user)
+    new_code, err = await db_put_link(short_code, info, session, user)
+    if err == ERR_ALREADY_LINK:
+        raise HTTPException(status_code=400, detail={
+            "error": f"There is already link with code: {new_code}",
+        })
     if new_code is not None:
         await update_link_cache(short_code, new_code, redis_client)
         return {
@@ -146,9 +155,7 @@ async def put_short_code(info: LinkUpdate, short_code: str, session: AsyncSessio
         }
     else:
         await set_not_found_cache(short_code, redis_client)
-        raise HTTPException(status_code=404, detail={
-            "error": "No found",
-        })
+        raise HTTPException(status_code=404)
 
 
 @router.get("/{short_code}/stats")

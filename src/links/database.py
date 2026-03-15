@@ -6,9 +6,9 @@ import random
 import string
 import datetime
 from .models import Link
-from fastapi import HTTPException
 
 SHORT_CODE_LEN = 8
+ERR_ALREADY_LINK = -1
 
 
 def generate_code():
@@ -28,9 +28,7 @@ async def db_create_link(info: LinkCreate, session: AsyncSession, user: User):
 
         if link_exist:
             if info.custom_alias is not None:
-                raise HTTPException(status_code=500, detail={
-                    "error": f"There is already link with code: {code}",
-                })
+                return code, ERR_ALREADY_LINK
             continue
 
         creator = user.email if user is not None else None
@@ -44,7 +42,7 @@ async def db_create_link(info: LinkCreate, session: AsyncSession, user: User):
         await session.execute(statement)
         await session.commit()
 
-        return code
+        return code, None
 
 
 async def db_get_link(short_code: str, session: AsyncSession):
@@ -79,9 +77,7 @@ async def db_put_link(old_code: str, info: LinkUpdate, session: AsyncSession, us
 
         if link_exist:
             if info.custom_alias is not None:
-                raise HTTPException(status_code=500, detail={
-                    "error": f"There is already link with code: {code}",
-                })
+                return code, ERR_ALREADY_LINK
             continue
 
         update_values = {"code": code}
@@ -93,7 +89,7 @@ async def db_put_link(old_code: str, info: LinkUpdate, session: AsyncSession, us
         ).values(update_values)
         res = await session.execute(query)
         await session.commit()
-        return code if res.rowcount != 0 else None
+        return (code, None) if res.rowcount != 0 else (None, None)
 
 
 async def db_get_stats(code: str, session: AsyncSession):

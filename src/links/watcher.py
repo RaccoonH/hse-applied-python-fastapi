@@ -1,5 +1,6 @@
 import asyncio
 from sqlalchemy import delete, update
+from sqlalchemy.sql.functions import coalesce
 from .models import Link
 import datetime
 from .cache import remove_link, redis_lock, REDIS_GET_TAG, REDIS_COUNTER_TAG, REDIS_USE_TIME_TAG
@@ -79,7 +80,7 @@ async def remove_unused_link(session: AsyncSession, redis_client, now, moved_cac
         LAST_REMOVE_UNUSED_LINK_TIME = now
 
         limit_day = now - datetime.timedelta(seconds=REMOVE_UNUSED_LINK_INTERVAL_SEC)
-        query = delete(Link).where(Link.last_use_time <= limit_day).returning(Link.code)
+        query = delete(Link).where(coalesce(Link.last_use_time, Link.creation_time) <= limit_day).returning(Link.code)
         res = await session.execute(query)
         res = res.scalars().all()
 
