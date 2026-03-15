@@ -11,3 +11,8 @@ gunicorn~=23.0.0
 pydantic~=2.10.6
 starlette~=0.45.3
 aiosqlite~=0.22.1
+fakeredis[lua]
+pytest~=8.4.2
+pytest-asyncio~=1.2.0
+coverage~=7.10.7
+locust~=2.34.0
